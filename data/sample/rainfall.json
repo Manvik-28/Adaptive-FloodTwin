@@ -1,0 +1,19 @@
+{
+  "scenarios": [
+    {
+      "id": "light",
+      "rainfall_mm": 50,
+      "duration_minutes": 60
+    },
+    {
+      "id": "moderate",
+      "rainfall_mm": 100,
+      "duration_minutes": 60
+    },
+    {
+      "id": "heavy",
+      "rainfall_mm": 150,
+      "duration_minutes": 60
+    }
+  ]
+}
