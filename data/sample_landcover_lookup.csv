@@ -1,5 +1,0 @@
-surface_type,description,runoff_coefficient
-paved,"Roads, parking lots, concrete pavement",0.9
-roof,Building rooftops,0.85
-grass,"Lawns, playgrounds",0.3
-bare_soil,"Unpaved open ground, construction areas",0.45
