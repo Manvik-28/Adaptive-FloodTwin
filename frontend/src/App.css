@@ -319,3 +319,49 @@
   }
 
 }
+/* Risk colors */
+
+.risk-card.low {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.risk-card.low .result-value {
+  color: #15803d;
+}
+
+.risk-card.medium {
+  background: #fefce8;
+  border-color: #fde68a;
+}
+
+.risk-card.medium .result-value {
+  color: #a16207;
+}
+
+.risk-card.high {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.risk-card.high .result-value {
+  color: #dc2626;
+}
+
+
+/* Timeline risk badge */
+
+.risk.low {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.risk.medium {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.risk.high {
+  background: #fee2e2;
+  color: #dc2626;
+}

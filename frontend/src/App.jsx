@@ -79,6 +79,7 @@ function App() {
   const currentRisk = currentStep
     ? currentStep.risk_level
     : "SAFE";
+  const riskClass = currentRisk.toLowerCase();
 
   // Mock flood polygon
   let floodPolygon = [];
@@ -242,17 +243,17 @@ function App() {
                 </div>
 
 
-                <div className="result-card">
+              <div className={`result-card risk-card ${riskClass}`}>
 
-                  <div className="result-label">
-                    Risk Level
-                  </div>
-
-                  <div className="result-value">
-                    {currentRisk}
-                  </div>
-
+                <div className="result-label">
+                  Risk Level
                 </div>
+
+                <div className="result-value">
+                  {currentRisk}
+                </div>
+
+              </div>  
 
               </div>
 
@@ -294,7 +295,7 @@ function App() {
 
               </div>
 
-              <div className="risk">
+              <div className={`risk ${riskClass}`}>
                 Risk: {currentRisk}
               </div>
 
@@ -396,7 +397,12 @@ function App() {
               positions={floodPolygon}
               pathOptions={{
                 fillOpacity: 0.5,
-                color: "blue",
+                color:
+                  currentRisk === "LOW"
+                    ? "#22c55e"
+                    : currentRisk === "MEDIUM"
+                    ? "#eab308"
+                    : "#ef4444",
               }}
             />
 
