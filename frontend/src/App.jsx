@@ -6,6 +6,7 @@ import {
   GeoJSON,
   Polygon,
   Polyline,
+  ZoomControl,
 } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
@@ -372,12 +373,13 @@ function App() {
         <MapContainer
           center={[17.448, 78.392]}
           zoom={17}
+          zoomControl={false}
           style={{
             height: "100%",
             width: "100%",
           }}
         >
-
+          <ZoomControl position="bottomright" />
           <TileLayer
             attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
