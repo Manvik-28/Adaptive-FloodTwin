@@ -30,79 +30,43 @@ function App() {
 
   // Existing flood simulation API
   async function simulateFlood() {
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/simulate?rainfall_mm=${rainfall}`
-      );
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/simulate?rainfall_mm=${rainfall}`
+    );
 
-      const data = await response.json();
-
-      setFloodData(data);
-      setTimeIndex(0);
-      setRoute(null);
-    } catch (error) {
-      console.error("Simulation error:", error);
-
-      // Temporary fallback so the frontend can still be demonstrated
-      const fallback = {
-        rainfall_mm: rainfall,
-        duration_minutes: 60,
-        timesteps: [
-          {
-            time_minutes: 0,
-            max_depth_m: 0,
-            risk_level: "SAFE",
-          },
-          {
-            time_minutes: 15,
-            max_depth_m: rainfall === 50 ? 0.05 : rainfall === 100 ? 0.12 : 0.2,
-            risk_level: rainfall === 50 ? "LOW" : rainfall === 100 ? "MEDIUM" : "HIGH",
-          },
-          {
-            time_minutes: 30,
-            max_depth_m: rainfall === 50 ? 0.08 : rainfall === 100 ? 0.2 : 0.35,
-            risk_level: rainfall === 50 ? "LOW" : rainfall === 100 ? "MEDIUM" : "HIGH",
-          },
-          {
-            time_minutes: 45,
-            max_depth_m: rainfall === 50 ? 0.1 : rainfall === 100 ? 0.28 : 0.45,
-            risk_level: rainfall === 50 ? "LOW" : rainfall === 100 ? "HIGH" : "HIGH",
-          },
-          {
-            time_minutes: 60,
-            max_depth_m: rainfall === 50 ? 0.12 : rainfall === 100 ? 0.35 : 0.55,
-            risk_level: rainfall === 50 ? "LOW" : rainfall === 100 ? "HIGH" : "CRITICAL",
-          },
-        ],
-      };
-
-      setFloodData(fallback);
-      setTimeIndex(0);
-      setRoute(null);
+    if (!response.ok) {
+      throw new Error(`Simulation API failed: ${response.status}`);
     }
+
+    const data = await response.json();
+
+    setFloodData(data);
+    setTimeIndex(0);
+    setRoute(null);
+  } catch (error) {
+    console.error("Simulation error:", error);
   }
+}
 
   // Existing evacuation API
   async function findEvacuationRoute() {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/evacuate");
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/evacuate"
+    );
 
-      const data = await response.json();
-
-      setRoute(data);
-    } catch (error) {
-      console.error("Evacuation error:", error);
-
-      // Temporary frontend fallback
-      setRoute({
-        start: "Building-A",
-        destination: "Safe-Zone",
-        route: ["Building-A", "Building-B", "Road-2", "Safe-Zone"],
-        estimated_time_minutes: 8,
-        risk: "low",
-      });
+    if (!response.ok) {
+      throw new Error(`Evacuation API failed: ${response.status}`);
     }
+
+    const data = await response.json();
+
+    setRoute(data);
+  } catch (error) {
+    console.error("Evacuation error:", error);
   }
+}
 
   const currentStep = floodData
     ? floodData.timesteps[timeIndex]
@@ -144,13 +108,7 @@ function App() {
     }
   }
 
-  // Existing mock route coordinates
-  const mockRouteCoordinates = [
-    [17.4475, 78.3915],
-    [17.4480, 78.3920],
-    [17.4485, 78.3925],
-    [17.4488, 78.3930],
-  ];
+  
 
   return (
     <div className="app">
@@ -449,7 +407,7 @@ function App() {
           {route && (
 
             <Polyline
-              positions={mockRouteCoordinates}
+              positions={route.route_coordinates}
               pathOptions={{
                 color: "green",
                 weight: 6,
