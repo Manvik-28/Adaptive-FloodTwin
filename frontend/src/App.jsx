@@ -18,6 +18,8 @@ function App() {
   const [campusData, setCampusData] = useState(null);
   const [timeIndex, setTimeIndex] = useState(0);
   const [route, setRoute] = useState(null);
+  const [simulationLoading, setSimulationLoading] = useState(false);
+  const [simulationError, setSimulationError] = useState("");
 
   // Load existing campus GIS data
   useEffect(() => {
@@ -31,6 +33,9 @@ function App() {
 
   // Existing flood simulation API
   async function simulateFlood() {
+  setSimulationLoading(true);
+  setSimulationError("");
+
   try {
     const response = await fetch(
       `http://127.0.0.1:8000/simulate?rainfall_mm=${rainfall}`
@@ -42,11 +47,23 @@ function App() {
 
     const data = await response.json();
 
+    if (!data.timesteps || data.timesteps.length === 0) {
+      throw new Error("Simulation returned no timestep data.");
+    }
+
     setFloodData(data);
     setTimeIndex(0);
     setRoute(null);
+
   } catch (error) {
     console.error("Simulation error:", error);
+
+    setSimulationError(
+      "Unable to run flood simulation. Please make sure the backend is running."
+    );
+
+  } finally {
+    setSimulationLoading(false);
   }
 }
 
@@ -186,9 +203,17 @@ function App() {
           <button
             className="primary-button"
             onClick={simulateFlood}
+            disabled={simulationLoading}
           >
-            Run Flood Simulation
+            {simulationLoading
+              ? "Running Simulation..."
+              : "Run Flood Simulation"}
           </button>
+          {simulationError && (
+            <div className="simulation-error">
+              {simulationError}
+            </div>
+          )}
 
         </div>
 
