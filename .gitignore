@@ -23,3 +23,6 @@ Thumbs.db
 
 # Environment
 .env
+# QGIS / GDAL generated sidecar files
+*.aux.xml
+*.tfw
