@@ -392,3 +392,74 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+/* Map Legend */
+
+.map-legend {
+  position: absolute;
+  left: 15px;
+  bottom: 15px;
+  z-index: 1000;
+
+  min-width: 150px;
+  padding: 12px;
+
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  font-size: 12px;
+}
+
+.legend-title {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  color: #374151;
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.legend-color.flood {
+  background: #3b82f6;
+}
+
+.legend-color.low {
+  background: #22c55e;
+}
+
+.legend-color.medium {
+  background: #eab308;
+}
+
+.legend-color.high {
+  background: #ef4444;
+}
+
+.legend-line {
+  width: 20px;
+  height: 4px;
+  display: inline-block;
+  border-radius: 2px;
+}
+
+.legend-line.route {
+  background: #16a34a;
+}

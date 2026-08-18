@@ -448,7 +448,30 @@ function App() {
             />
 
           )}
+          {/* MAP LEGEND */}
+          <div className="map-legend">
+            <div className="legend-title">Map Legend</div>
 
+            <div className="legend-item">
+              <span className="legend-color low"></span>
+              Low Risk Flood Area
+            </div>
+
+            <div className="legend-item">
+              <span className="legend-color medium"></span>
+              Medium Risk Flood Area
+            </div>
+
+            <div className="legend-item">
+              <span className="legend-color high"></span>
+              High Risk Flood Area
+            </div>
+
+            <div className="legend-item">
+              <span className="legend-line route"></span>
+              Evacuation Route
+            </div>
+          </div>
         </MapContainer>
 
       </div>
