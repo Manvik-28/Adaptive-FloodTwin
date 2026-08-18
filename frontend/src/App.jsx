@@ -23,7 +23,7 @@ function App() {
 
   // Load existing campus GIS data
   useEffect(() => {
-    fetch("/data/mock_campus.geojson")
+    fetch("/data/griet_campus.geojson")
       .then((response) => response.json())
       .then((data) => setCampusData(data))
       .catch((error) => {
@@ -396,8 +396,8 @@ function App() {
       <div className="map-container">
 
         <MapContainer
-          center={[17.448, 78.392]}
-          zoom={17}
+          center={[17.5205, 78.366]}
+          zoom={16}
           zoomControl={false}
           style={{
             height: "100%",
@@ -438,7 +438,6 @@ function App() {
 
           {/* EVACUATION ROUTE */}
           {route && (
-
             <Polyline
               positions={route.route_coordinates}
               pathOptions={{
@@ -448,7 +447,9 @@ function App() {
             />
 
           )}
-          {/* MAP LEGEND */}
+          
+        </MapContainer>
+        {/* MAP LEGEND */}
           <div className="map-legend">
             <div className="legend-title">Map Legend</div>
 
@@ -472,7 +473,6 @@ function App() {
               Evacuation Route
             </div>
           </div>
-        </MapContainer>
 
       </div>
 
