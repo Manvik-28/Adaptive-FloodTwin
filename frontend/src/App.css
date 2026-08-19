@@ -1,20 +1,22 @@
 .app {
   height: 100vh;
   width: 100%;
-  position: relative;
   overflow: hidden;
   font-family: Arial, sans-serif;
+  padding-top: 64px;
+  box-sizing: border-box;
 }
 
 /* Header */
 
 .header {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
+
   height: 64px;
-  z-index: 1000;
+  z-index: 2000;
 
   display: flex;
   align-items: center;
@@ -25,6 +27,8 @@
   background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid #e5e7eb;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  box-sizing: border-box;
 }
 
 .logo {
@@ -86,24 +90,26 @@
 
 .control-panel {
   position: absolute;
-  top: 84px;
-  left: 18px;
 
-  width: 310px;
-  max-height: calc(100vh - 105px);
+  top: 64px;
+  left: 0;
+  bottom: 0;
+
+  width: 330px;
 
   overflow-y: auto;
 
   z-index: 1000;
 
   background: rgba(255, 255, 255, 0.97);
-  border-radius: 14px;
 
   padding: 20px;
 
   box-sizing: border-box;
 
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-right: 1px solid #e5e7eb;
+
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
 }
 
 .panel-title {
@@ -259,8 +265,14 @@
 /* Map */
 
 .map-container {
-  height: 100%;
-  width: 100%;
+  position: absolute;
+
+  top: 64px;
+  left: 330px;
+  right: 0;
+  bottom: 0;
+
+  z-index: 1;
 }
 
 /* Evacuation */
@@ -318,4 +330,136 @@
     top: 75px;
   }
 
+}
+/* Risk colors */
+
+.risk-card.low {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.risk-card.low .result-value {
+  color: #15803d;
+}
+
+.risk-card.medium {
+  background: #fefce8;
+  border-color: #fde68a;
+}
+
+.risk-card.medium .result-value {
+  color: #a16207;
+}
+
+.risk-card.high {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.risk-card.high .result-value {
+  color: #dc2626;
+}
+
+
+/* Timeline risk badge */
+
+.risk.low {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.risk.medium {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.risk.high {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.simulation-error {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+/* Map Legend */
+
+.map-legend {
+  position: absolute;
+  left: 15px;
+  bottom: 15px;
+  z-index: 1000;
+
+  min-width: 150px;
+  padding: 12px;
+
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  font-size: 12px;
+}
+
+.legend-title {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  color: #374151;
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.legend-color.flood {
+  background: #3b82f6;
+}
+
+.legend-color.low {
+  background: #22c55e;
+}
+
+.legend-color.medium {
+  background: #eab308;
+}
+
+.legend-color.high {
+  background: #ef4444;
+}
+
+.legend-line {
+  width: 20px;
+  height: 4px;
+  display: inline-block;
+  border-radius: 2px;
+}
+
+.legend-line.route {
+  background: #16a34a;
 }

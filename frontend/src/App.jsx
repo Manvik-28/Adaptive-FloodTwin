@@ -6,6 +6,7 @@ import {
   GeoJSON,
   Polygon,
   Polyline,
+  ZoomControl,
 } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
@@ -17,10 +18,12 @@ function App() {
   const [campusData, setCampusData] = useState(null);
   const [timeIndex, setTimeIndex] = useState(0);
   const [route, setRoute] = useState(null);
+  const [simulationLoading, setSimulationLoading] = useState(false);
+  const [simulationError, setSimulationError] = useState("");
 
   // Load existing campus GIS data
   useEffect(() => {
-    fetch("/data/mock_campus.geojson")
+    fetch("/data/griet_campus.geojson")
       .then((response) => response.json())
       .then((data) => setCampusData(data))
       .catch((error) => {
@@ -30,6 +33,9 @@ function App() {
 
   // Existing flood simulation API
   async function simulateFlood() {
+  setSimulationLoading(true);
+  setSimulationError("");
+
   try {
     const response = await fetch(
       `http://127.0.0.1:8000/simulate?rainfall_mm=${rainfall}`
@@ -41,11 +47,23 @@ function App() {
 
     const data = await response.json();
 
+    if (!data.timesteps || data.timesteps.length === 0) {
+      throw new Error("Simulation returned no timestep data.");
+    }
+
     setFloodData(data);
     setTimeIndex(0);
     setRoute(null);
+
   } catch (error) {
     console.error("Simulation error:", error);
+
+    setSimulationError(
+      "Unable to run flood simulation. Please make sure the backend is running."
+    );
+
+  } finally {
+    setSimulationLoading(false);
   }
 }
 
@@ -79,6 +97,7 @@ function App() {
   const currentRisk = currentStep
     ? currentStep.risk_level
     : "SAFE";
+  const riskClass = currentRisk.toLowerCase();
 
   // Mock flood polygon
   let floodPolygon = [];
@@ -184,9 +203,17 @@ function App() {
           <button
             className="primary-button"
             onClick={simulateFlood}
+            disabled={simulationLoading}
           >
-            Run Flood Simulation
+            {simulationLoading
+              ? "Running Simulation..."
+              : "Run Flood Simulation"}
           </button>
+          {simulationError && (
+            <div className="simulation-error">
+              {simulationError}
+            </div>
+          )}
 
         </div>
 
@@ -242,17 +269,17 @@ function App() {
                 </div>
 
 
-                <div className="result-card">
+              <div className={`result-card risk-card ${riskClass}`}>
 
-                  <div className="result-label">
-                    Risk Level
-                  </div>
-
-                  <div className="result-value">
-                    {currentRisk}
-                  </div>
-
+                <div className="result-label">
+                  Risk Level
                 </div>
+
+                <div className="result-value">
+                  {currentRisk}
+                </div>
+
+              </div>  
 
               </div>
 
@@ -294,7 +321,7 @@ function App() {
 
               </div>
 
-              <div className="risk">
+              <div className={`risk ${riskClass}`}>
                 Risk: {currentRisk}
               </div>
 
@@ -369,14 +396,15 @@ function App() {
       <div className="map-container">
 
         <MapContainer
-          center={[17.448, 78.392]}
-          zoom={17}
+          center={[17.5205, 78.366]}
+          zoom={16}
+          zoomControl={false}
           style={{
             height: "100%",
             width: "100%",
           }}
         >
-
+          <ZoomControl position="bottomright" />
           <TileLayer
             attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -396,7 +424,12 @@ function App() {
               positions={floodPolygon}
               pathOptions={{
                 fillOpacity: 0.5,
-                color: "blue",
+                color:
+                  currentRisk === "LOW"
+                    ? "#22c55e"
+                    : currentRisk === "MEDIUM"
+                    ? "#eab308"
+                    : "#ef4444",
               }}
             />
 
@@ -405,7 +438,6 @@ function App() {
 
           {/* EVACUATION ROUTE */}
           {route && (
-
             <Polyline
               positions={route.route_coordinates}
               pathOptions={{
@@ -415,8 +447,32 @@ function App() {
             />
 
           )}
-
+          
         </MapContainer>
+        {/* MAP LEGEND */}
+          <div className="map-legend">
+            <div className="legend-title">Map Legend</div>
+
+            <div className="legend-item">
+              <span className="legend-color low"></span>
+              Low Risk Flood Area
+            </div>
+
+            <div className="legend-item">
+              <span className="legend-color medium"></span>
+              Medium Risk Flood Area
+            </div>
+
+            <div className="legend-item">
+              <span className="legend-color high"></span>
+              High Risk Flood Area
+            </div>
+
+            <div className="legend-item">
+              <span className="legend-line route"></span>
+              Evacuation Route
+            </div>
+          </div>
 
       </div>
 
