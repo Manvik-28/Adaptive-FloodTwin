@@ -1,22 +1,30 @@
-import { useEffect, useState } from "react";
+import Griet3D from "./Griet3D";
+import { useState, useEffect } from "react";
 
 import {
   MapContainer,
   TileLayer,
   GeoJSON,
-  Polygon,
   Polyline,
+  ImageOverlay,
   ZoomControl,
 } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 
+const API = "http://127.0.0.1:8000";
+
 function App() {
-  const [rainfall, setRainfall] = useState(100);
+  const [show3D, setShow3D] = useState(false);
+
+  const [rainfall, setRainfall] = useState(150);
+  const [duration, setDuration] = useState(30);
+
   const [floodData, setFloodData] = useState(null);
   const [campusData, setCampusData] = useState(null);
-  const [route, setRoute] = useState(null);
+  const [floodBounds, setFloodBounds] = useState(null);
+
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationError, setSimulationError] = useState("");
 
@@ -25,7 +33,7 @@ function App() {
       .then((response) => response.json())
       .then((data) => setCampusData(data))
       .catch((error) => {
-        console.error("Error loading campus data:", error);
+        console.error("Campus GeoJSON error:", error);
       });
   }, []);
 
@@ -34,109 +42,116 @@ function App() {
     setSimulationError("");
 
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/simulate?rainfall_mm=${rainfall}`
+      const simulateResponse = await fetch(
+        `${API}/simulate?rainfall_mm=${rainfall}&duration_minutes=${duration}`
       );
 
-      if (!response.ok) {
-        throw new Error(`Simulation API failed: ${response.status}`);
+      if (!simulateResponse.ok) {
+        throw new Error(
+          `Simulation API failed: ${simulateResponse.status}`
+        );
       }
 
-      const data = await response.json();
+      const data = await simulateResponse.json();
+
+      // Keep selected duration visible even before the backend
+      // starts using it in the physics model.
+      data.duration_minutes = duration;
 
       setFloodData(data);
-      setRoute(null);
+
+      const boundsResponse = await fetch(
+        `${API}/flood-bounds?rainfall_mm=${rainfall}&duration_minutes=${duration}`
+      );
+
+      if (!boundsResponse.ok) {
+        throw new Error(
+          `Flood bounds API failed: ${boundsResponse.status}`
+        );
+      }
+
+      const bounds = await boundsResponse.json();
+
+      setFloodBounds([
+        [bounds.south, bounds.west],
+        [bounds.north, bounds.east],
+      ]);
     } catch (error) {
       console.error("Simulation error:", error);
 
       setSimulationError(
-        "Unable to run flood simulation. Please make sure the backend is running."
+        "Unable to run simulation. Make sure FastAPI is running."
       );
     } finally {
       setSimulationLoading(false);
     }
   }
 
-  async function findEvacuationRoute() {
-    try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/evacuate"
-      );
-
-      if (!response.ok) {
-        throw new Error(`Evacuation API failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setRoute(data);
-    } catch (error) {
-      console.error("Evacuation error:", error);
-    }
-  }
-
   const currentDepth = floodData?.max_depth_m ?? 0;
+  const meanDepth = floodData?.mean_depth_m ?? 0;
   const currentRisk = floodData?.risk_level ?? "SAFE";
+
+  const highDepthCells = floodData?.high_risk_cells ?? 0;
+  const criticalCells = floodData?.critical_cells ?? 0;
+
+  const highDepthArea = highDepthCells * 100;
+  const criticalArea = criticalCells * 100;
+
+  const evacuation = floodData?.evacuation;
+
+  const evacuationAvailable =
+    evacuation?.route && evacuation.route.length > 0;
+
   const riskClass = currentRisk.toLowerCase();
 
-  // Temporary visualization only.
-  // Real raster flood visualization will replace this next.
-  let floodPolygon = [];
-
-  if (currentDepth > 0) {
-    if (currentDepth <= 0.1) {
-      floodPolygon = [
-        [17.5200, 78.3655],
-        [17.5210, 78.3670],
-        [17.5203, 78.3680],
-        [17.5195, 78.3665],
-      ];
-    } else if (currentDepth <= 0.25) {
-      floodPolygon = [
-        [17.5197, 78.3650],
-        [17.5215, 78.3672],
-        [17.5205, 78.3685],
-        [17.5192, 78.3662],
-      ];
-    } else {
-      floodPolygon = [
-        [17.5193, 78.3645],
-        [17.5220, 78.3670],
-        [17.5210, 78.3690],
-        [17.5188, 78.3660],
-      ];
-    }
-  }
+  const routeRiskClass =
+    evacuation?.risk?.toLowerCase() || "low";
 
   return (
     <div className="app">
 
+      {/* HEADER */}
       <header className="header">
+
         <div className="logo">
-          <div className="logo-icon">🌊</div>
+
+          <div className="logo-icon">
+            FT
+          </div>
 
           <div>
             <h1>Adaptive FloodTwin</h1>
-            <span>GRIET Campus Flood Intelligence</span>
+            <span>
+              GRIET Campus Flood Intelligence
+            </span>
           </div>
+
         </div>
 
         <div className="system-status">
           <span className="status-dot"></span>
           System Online
         </div>
+
       </header>
 
+
+      {/* CONTROL PANEL */}
       <aside className="control-panel">
 
-        <h2 className="panel-title">
-          Flood Simulation
-        </h2>
+        <div className="dashboard-heading">
+          <h2 className="panel-title">
+            Flood Simulation
+          </h2>
 
-        <p className="panel-subtitle">
-          Physics-guided campus flood monitoring
-        </p>
+          <p className="panel-subtitle">
+            Physics-guided campus flood monitoring
+          </p>
+        </div>
 
-        <div className="section">
+
+        {/* SCENARIO */}
+        <div className="section simulation-section">
 
           <div className="section-title">
             Rainfall Scenario
@@ -145,16 +160,52 @@ function App() {
           <select
             className="select"
             value={rainfall}
-            onChange={(e) => setRainfall(Number(e.target.value))}
+            onChange={(e) =>
+              setRainfall(Number(e.target.value))
+            }
           >
-            <option value={50}>50 mm — Light</option>
-            <option value={100}>100 mm — Moderate</option>
-            <option value={150}>150 mm — Heavy</option>
-            <option value={200}>200 mm — Extreme</option>
+            <option value={100}>
+              100 mm - Heavy
+            </option>
+
+            <option value={150}>
+              150 mm - Very Heavy
+            </option>
+
+            <option value={250}>
+              250 mm - Extreme
+            </option>
+
+            <option value={350}>
+              350 mm - Severe
+            </option>
           </select>
 
-          <br />
-          <br />
+
+          <div className="section-title duration-title">
+            Rain Duration
+          </div>
+
+          <select
+            className="select"
+            value={duration}
+            onChange={(e) =>
+              setDuration(Number(e.target.value))
+            }
+          >
+            <option value={15}>
+              15 min - Short Event
+            </option>
+
+            <option value={30}>
+              30 min - Continuous Rain
+            </option>
+
+            <option value={60}>
+              60 min - Prolonged Rain
+            </option>
+          </select>
+
 
           <button
             className="primary-button"
@@ -166,6 +217,7 @@ function App() {
               : "Run Flood Simulation"}
           </button>
 
+
           {simulationError && (
             <div className="simulation-error">
               {simulationError}
@@ -174,125 +226,253 @@ function App() {
 
         </div>
 
+
+        {/* RESULTS */}
         {floodData && (
           <>
 
+            {/* CURRENT CONDITIONS */}
             <div className="section">
 
               <div className="section-title">
                 Current Conditions
               </div>
 
-              <div className="result-grid">
+              <div className={`risk-status-card ${riskClass}`}>
 
-                <div className="result-card">
-                  <div className="result-label">
-                    Rainfall
-                  </div>
-
-                  <div className="result-value">
-                    {floodData.rainfall_mm} mm
-                  </div>
+                <div className="risk-status-label">
+                  Overall Flood Risk
                 </div>
 
-                <div className="result-card">
-                  <div className="result-label">
-                    Water Depth
-                  </div>
-
-                  <div className="result-value">
-                    {currentDepth.toFixed(3)} m
-                  </div>
+                <div className="risk-status-value">
+                  {currentRisk}
                 </div>
 
-                <div className={`result-card risk-card ${riskClass}`}>
-                  <div className="result-label">
-                    Risk Level
-                  </div>
-
-                  <div className="result-value">
-                    {currentRisk}
-                  </div>
+                <div className="risk-status-depth">
+                  Maximum depth: {currentDepth.toFixed(3)} m
                 </div>
 
               </div>
 
             </div>
 
+
+            {/* KEY METRICS */}
             <div className="section">
 
               <div className="section-title">
-                Simulation Result
+                Key Indicators
               </div>
 
-              <div className="result-card">
+              <div className="metric-grid">
 
-                <div className="result-label">
-                  Mean Water Depth
+                <div className="metric-card">
+
+                  <div className="metric-label">
+                    Rainfall
+                  </div>
+
+                  <div className="metric-value">
+                    {floodData.rainfall_mm}
+                    <span> mm</span>
+                  </div>
+
                 </div>
 
-                <div className="result-value">
-                  {floodData.mean_depth_m?.toFixed(3)} m
+
+                <div className="metric-card">
+
+                  <div className="metric-label">
+                    Duration
+                  </div>
+
+                  <div className="metric-value">
+                    {duration}
+                    <span> min</span>
+                  </div>
+
                 </div>
 
-              </div>
 
-              <div className={`risk ${riskClass}`}>
-                Risk: {currentRisk}
+                <div className="metric-card">
+
+                  <div className="metric-label">
+                    Max Depth
+                  </div>
+
+                  <div className="metric-value">
+                    {currentDepth.toFixed(3)}
+                    <span> m</span>
+                  </div>
+
+                </div>
+
+
+                <div className="metric-card">
+
+                  <div className="metric-label">
+                    Mean Depth
+                  </div>
+
+                  <div className="metric-value">
+                    {meanDepth.toFixed(3)}
+                    <span> m</span>
+                  </div>
+
+                </div>
+
               </div>
 
             </div>
 
+
+            {/* FLOOD IMPACT */}
+            <div className="section">
+
+              <div className="section-title">
+                Flood Impact
+              </div>
+
+              <div className="impact-row">
+
+                <div>
+                  <span className="impact-label">
+                    High-depth cells
+                  </span>
+
+                  <strong>
+                    {highDepthCells}
+                  </strong>
+                </div>
+
+                <div>
+                  <span className="impact-label">
+                    High-depth area
+                  </span>
+
+                  <strong>
+                    {highDepthArea.toLocaleString()} m²
+                  </strong>
+                </div>
+
+                <div>
+                  <span className="impact-label">
+                    Critical cells
+                  </span>
+
+                  <strong>
+                    {criticalCells}
+                  </strong>
+                </div>
+
+                <div>
+                  <span className="impact-label">
+                    Critical area
+                  </span>
+
+                  <strong>
+                    {criticalArea.toLocaleString()} m²
+                  </strong>
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* EVACUATION */}
             <div className="section">
 
               <div className="section-title">
                 Evacuation
               </div>
 
-              <button
-                className="secondary-button"
-                onClick={findEvacuationRoute}
+              <div
+                className={`evacuation-status ${
+                  evacuationAvailable
+                    ? "available"
+                    : "blocked"
+                }`}
               >
-                Find Safe Evacuation Route
-              </button>
 
-              {route && (
+                <div className="evacuation-status-label">
+                  Evacuation Status
+                </div>
+
+                <div className="evacuation-status-value">
+                  {evacuationAvailable
+                    ? "AVAILABLE"
+                    : "BLOCKED"}
+                </div>
+
+                <div className="evacuation-status-message">
+                  {evacuation?.message ||
+                    "No evacuation route available."}
+                </div>
+
+              </div>
+
+
+              {evacuationAvailable ? (
+
                 <div className="route-box">
 
                   <div className="route-title">
-                    Safe Route Found
+                    Safest Available Route
                   </div>
 
-                  <div className="route-text">
+                  <div className="route-main">
+                    {evacuation.start}
+                    <span>to</span>
+                    {evacuation.destination}
+                  </div>
 
-                    <strong>From:</strong>{" "}
-                    {route.start}
+                  <div className="route-stats">
 
-                    <br />
+                    <div>
+                      <span>Distance</span>
+                      <strong>
+                        {evacuation.route_distance_m} m
+                      </strong>
+                    </div>
 
-                    <strong>To:</strong>{" "}
-                    {route.destination}
+                    <div>
+                      <span>ETA</span>
+                      <strong>
+                        {evacuation.estimated_time_minutes} min
+                      </strong>
+                    </div>
 
-                    <br />
-
-                    <strong>Path:</strong>{" "}
-                    {route.route.join(" → ")}
+                    <div>
+                      <span>Flood Depth</span>
+                      <strong>
+                        {evacuation.max_flood_depth_m} m
+                      </strong>
+                    </div>
 
                   </div>
 
-                  <div className="route-risk">
-
-                    Estimated time:{" "}
-                    {route.estimated_time_minutes} min
-
-                    <br />
-
-                    Route risk:{" "}
-                    {route.risk}
-
+                  <div className={`route-risk-badge ${routeRiskClass}`}>
+                    Route Risk: {evacuation.risk}
                   </div>
 
                 </div>
+
+              ) : (
+
+                <div className="blocked-box">
+
+                  <div className="blocked-title">
+                    No Safe Evacuation Route
+                  </div>
+
+                  <div className="blocked-text">
+                    Current flooding prevents a safe route
+                    from the Main Gate to the Assembly Point.
+                  </div>
+
+                </div>
+
               )}
 
             </div>
@@ -302,6 +482,8 @@ function App() {
 
       </aside>
 
+
+      {/* MAP */}
       <div className="map-container">
 
         <MapContainer
@@ -321,36 +503,41 @@ function App() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
+          {floodBounds && floodData && (
+            <ImageOverlay
+              key={`flood-${floodData.rainfall_mm}-${floodData.duration_minutes}`}
+              url={`${API}/flood-overlay?rainfall_mm=${floodData.rainfall_mm}&duration_minutes=${floodData.duration_minutes}`}
+              bounds={floodBounds}
+              opacity={0.65}
+            />
+          )}
+
           {campusData && (
             <GeoJSON data={campusData} />
           )}
 
-          {floodPolygon.length > 0 && (
-            <Polygon
-              positions={floodPolygon}
-              pathOptions={{
-                fillOpacity: 0.5,
-                color:
-                  currentRisk === "LOW"
-                    ? "#22c55e"
-                    : currentRisk === "MEDIUM"
-                    ? "#eab308"
-                    : "#ef4444",
-              }}
-            />
-          )}
-
-          {route && (
-            <Polyline
-              positions={route.route_coordinates}
-              pathOptions={{
-                color: "green",
-                weight: 6,
-              }}
-            />
-          )}
+          {evacuationAvailable &&
+            evacuation.route_coordinates &&
+            evacuation.route_coordinates.length > 1 && (
+              <Polyline
+                positions={evacuation.route_coordinates}
+                pathOptions={{
+                  color: "lime",
+                  weight: 6,
+                }}
+              />
+            )}
 
         </MapContainer>
+
+
+        <button
+          className="view-3d-button"
+          onClick={() => setShow3D(true)}
+        >
+          View 3D Terrain
+        </button>
+
 
         <div className="map-legend">
 
@@ -360,17 +547,17 @@ function App() {
 
           <div className="legend-item">
             <span className="legend-color low"></span>
-            Low Risk Flood Area
+            Low Risk
           </div>
 
           <div className="legend-item">
             <span className="legend-color medium"></span>
-            Medium Risk Flood Area
+            Moderate Risk
           </div>
 
           <div className="legend-item">
             <span className="legend-color high"></span>
-            High Risk Flood Area
+            High Risk
           </div>
 
           <div className="legend-line route"></div>
@@ -379,6 +566,44 @@ function App() {
         </div>
 
       </div>
+
+
+      {/* 3D MODAL */}
+      {show3D && (
+        <div className="three-d-overlay">
+
+          <div className="three-d-panel">
+
+            <div className="three-d-header">
+
+              <div>
+                <h2>GRIET 3D Terrain</h2>
+
+                <span>
+                  Campus elevation visualization
+                </span>
+              </div>
+
+              <button
+                className="three-d-close"
+                onClick={() => setShow3D(false)}
+              >
+                Close
+              </button>
+
+            </div>
+
+            <div className="three-d-content">
+              <Griet3D
+                rainfall={floodData?.rainfall_mm ?? rainfall}
+                duration={floodData?.duration_minutes ?? duration}
+              />
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   );
